@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use OnePay\Checkout\Exceptions\OnePayException;
 use OnePay\Checkout\Services\OnePayService;
@@ -25,7 +26,7 @@ class CheckoutDemoController extends Controller
     public function submit(Request $request, OnePayService $onePay): RedirectResponse
     {
         $validated = $request->validate([
-            'reference' => ['nullable', 'string', 'min:10', 'max:64'],
+            'reference' => ['nullable', 'string', 'min:10', 'max:21'],
             'currency' => ['required', 'string', 'size:3'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'first_name' => ['required', 'string', 'max:255'],
@@ -37,7 +38,8 @@ class CheckoutDemoController extends Controller
             'items' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $reference = $validated['reference'] ?? $onePay->generateReference('DEMO');
+        // OnePay API allows max 21 chars (plugin ULID refs are longer).
+        $reference = $validated['reference'] ?? 'DEMO' . strtoupper(substr(Str::ulid()->toBase32(), 0, 17));
         $transactionRedirectUrl = $validated['redirect_url'] ?? route('demo.payment.return');
 
         $payload = [

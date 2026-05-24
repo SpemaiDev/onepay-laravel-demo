@@ -48,9 +48,9 @@
 
     <form method="post" action="{{ route('demo.checkout.submit') }}">
         @csrf
-        <label for="reference">Reference (optional, min 10 chars if set)</label>
-        <input id="reference" name="reference" value="{{ old('reference') }}" placeholder="Leave empty to auto-generate">
-        <div class="hint">Auto: DEMO + ULID via the package.</div>
+        <label for="reference">Reference (optional, 10–21 chars if set)</label>
+        <input id="reference" name="reference" value="{{ old('reference') }}" maxlength="21" placeholder="Leave empty to auto-generate">
+        <div class="hint">Auto: DEMO + 17-char ULID (21 chars max for OnePay API).</div>
 
         <label for="currency">Currency *</label>
         <select id="currency" name="currency" required>
