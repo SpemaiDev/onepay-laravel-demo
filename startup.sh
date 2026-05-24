@@ -32,9 +32,21 @@ chmod 775 "$SQLITE_DIR"
 
 echo "==> Setting storage permissions..."
 chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" 2>/dev/null || true
+chmod -R 755 "$APP_DIR/public" 2>/dev/null || true
 
 # Remove Azure default placeholder page if present
 rm -f "$APP_DIR/hostingstart.html" 2>/dev/null || true
+
+# ── Configure nginx for Laravel (serve from /public) ─────────────────────────
+echo "==> Applying nginx configuration for Laravel..."
+NGINX_TARGET="/etc/nginx/sites-enabled/default"
+if [ -f "$APP_DIR/nginx.conf" ]; then
+    cp "$APP_DIR/nginx.conf" "$NGINX_TARGET"
+    nginx -t && service nginx reload
+    echo "==> nginx reloaded with Laravel public root."
+else
+    echo "==> WARNING: nginx.conf not found, skipping nginx configuration."
+fi
 
 # ── Refresh caches with real Azure App Settings ───────────────────────────────
 echo "==> Clearing stale caches..."
