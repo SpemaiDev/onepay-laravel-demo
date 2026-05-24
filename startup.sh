@@ -1,14 +1,21 @@
 #!/bin/bash
 # Azure App Service startup script for Laravel (SQLite)
-# Set this as the Startup Command in App Service → Configuration → General settings
+# Set as Startup Command: /home/site/wwwroot/startup.sh
 
 set -e
 
 APP_DIR=/home/site/wwwroot
 
+echo "==> Creating required Laravel directories..."
+mkdir -p \
+  "$APP_DIR/storage/framework/views" \
+  "$APP_DIR/storage/framework/cache/data" \
+  "$APP_DIR/storage/framework/sessions" \
+  "$APP_DIR/storage/logs" \
+  "$APP_DIR/bootstrap/cache"
+
 # ── Persistent SQLite storage ─────────────────────────────────────────────────
-# /home/data persists across deploys and restarts.
-# /home/site/wwwroot is wiped on every deploy, so DO NOT store the DB there.
+# /home/data persists across deploys. /home/site/wwwroot is wiped on every deploy.
 SQLITE_DIR=/home/data/database
 SQLITE_FILE="$SQLITE_DIR/database.sqlite"
 
@@ -23,22 +30,24 @@ fi
 chmod 664 "$SQLITE_FILE"
 chmod 775 "$SQLITE_DIR"
 
-# ── Storage / cache permissions ───────────────────────────────────────────────
 echo "==> Setting storage permissions..."
 chmod -R 775 "$APP_DIR/storage" "$APP_DIR/bootstrap/cache" 2>/dev/null || true
 
+# Remove Azure default placeholder page if present
+rm -f "$APP_DIR/hostingstart.html" 2>/dev/null || true
+
 # ── Refresh caches with real Azure App Settings ───────────────────────────────
-# The workflow bakes caches from .env.example; re-run here with live env values.
-echo "==> Refreshing Laravel caches..."
+echo "==> Clearing stale caches..."
+php "$APP_DIR/artisan" config:clear || true
+php "$APP_DIR/artisan" route:clear || true
+php "$APP_DIR/artisan" view:clear || true
+
+echo "==> Building Laravel caches..."
 php "$APP_DIR/artisan" config:cache
 php "$APP_DIR/artisan" route:cache
 php "$APP_DIR/artisan" view:cache
 
-# ── Run migrations ────────────────────────────────────────────────────────────
 echo "==> Running database migrations..."
 php "$APP_DIR/artisan" migrate --force
 
 echo "==> Startup complete."
-
-# Hand off to Azure's default PHP/nginx startup
-/usr/local/bin/startup.sh
